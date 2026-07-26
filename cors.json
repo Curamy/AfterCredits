@@ -1,0 +1,21 @@
+[
+  {
+    "origin": [
+      "http://localhost:8080",
+      "http://localhost",
+      "https://aftercredit.web.app",
+      "https://aftercredit.firebaseapp.com",
+      "https://movie-review-6db21.web.app",
+      "https://movie-review-6db21.firebaseapp.com"
+    ],
+    "method": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+    "responseHeader": [
+      "Content-Type",
+      "Authorization",
+      "Content-Length",
+      "User-Agent",
+      "x-goog-resumable"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]

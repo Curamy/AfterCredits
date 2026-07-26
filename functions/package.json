@@ -1,0 +1,13 @@
+{
+  "name": "movie-review-functions",
+  "description": "카카오 로그인 → Firebase 커스텀 토큰 발급",
+  "main": "index.js",
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.2",
+    "firebase-functions": "^6.3.0"
+  },
+  "private": true
+}
