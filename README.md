@@ -1,125 +1,81 @@
 # 애프터 크레딧 (After Credits)
 
-개인 영화 감상 기록·랭킹 앱. Flutter 단일 코드베이스로 iOS / Android / Web(PC)을 모두 지원하며,
-모바일 앱을 메인으로, PC 웹은 보조 접근 수단으로 설계되었다.
+**내가 본 영화를 기록하고, 나만의 기준으로 랭킹을 매기는 개인 영화 감상 기록 앱.**
 
-- 서비스: https://aftercredits.web.app
-- 로그인: 카카오 계정만 지원 (개인용 앱이라 다른 사람의 기록은 볼 수 없음)
+Flutter 하나로 만든 앱이 iOS / Android / PC 웹에서 모두 똑같이 동작한다. 스마트폰 앱이 메인이고,
+PC 웹은 보조로 쓸 수 있게 반응형으로 설계했다. 로그인은 카카오 계정 하나뿐이고, 각자의 기록은
+본인만 볼 수 있다 — 다른 사람에게 보여주기 위한 리뷰 사이트가 아니라, 순수하게 "내가 본 영화를
+내 방식대로 정리하는" 개인 아카이브다.
 
-## 주요 기능
+🔗 https://aftercredits.web.app
 
-- **영화 자동 완성**: TMDB API로 제목 검색 시 포스터·러닝타임·장르·제작 국가·개봉년도 자동 입력
-- **관람 정보**: 영화관(CGV/메가박스/롯데/OTT 등) + 특별관(IMAX/4DX/ScreenX 등, 다중 선택)
-- **평가**: 5개 지표(순수재미/스토리/연기·연출/시청각 효과/작품성) 슬라이더 + 난이도·수위
-- **레이더 차트**: 해당 영화 점수 vs 내 전체 평균, 2점 간격 눈금
-- **평가 기준 커스터마이징**: 프로필에서 5개 지표의 이름·설명을 자유롭게 수정 가능
-  - 리뷰를 저장하는 시점의 기준이 리뷰에 함께 스냅샷으로 저장되므로, 이후 기준을 바꿔도
-    이미 등록된 리뷰의 차트는 바뀌지 않는다 (새로 등록/수정하는 리뷰부터 새 기준 적용)
-- **필터**: 감상 연도 / 국내·해외 / 장르
-- **사진 첨부**: 리뷰당 최대 2장
-- **개인화**: 닉네임·프로필 사진, 라이트/다크/시스템 테마, 사진 미리보기·추천작 표시 여부 설정
-- **프라이버시**: Firestore/Storage 보안 규칙으로 본인 데이터만 읽기/쓰기 가능하도록 강제
-- **반응형 UI**: 같은 화면이 모바일/태블릿/PC 폭에 맞춰 레이아웃을 조정 (앱 우선, 웹 보조)
+<!-- 스크린샷 추가 예정: 메인 랭킹 화면(모바일) -->
 
-## 기술 스택
+---
 
-| 영역 | 사용 기술 |
-|---|---|
-| 프레임워크 | Flutter (Dart), Riverpod (`flutter_riverpod`) |
-| 라우팅 | `go_router` |
-| 차트 | `fl_chart` (레이더 차트) |
-| 백엔드 | Firebase Auth(커스텀 토큰), Cloud Firestore, Firebase Storage, Cloud Functions(Node 22), Hosting |
-| 로그인 | 카카오 로그인 단일 (`kakao_flutter_sdk_user` — 모바일 네이티브 SDK / 웹은 OAuth 리다이렉트 + Cloud Functions 토큰 교환) |
-| 외부 API | TMDB (The Movie Database) |
-| 이미지 | `image_picker`, `cached_network_image` |
+## 메인 화면 — 내 영화 랭킹
 
-## 프로젝트 구조
+로그인하면 지금까지 기록한 모든 영화가 **총점 순으로 랭킹** 매겨져 목록으로 뜬다. 포스터, 순위,
+관람 영화관·특별관, 장르 태그, 관람일·러닝타임·국내/해외, 난이도·수위 미니 게이지, 그리고 총점이
+카드 하나에 요약되어 한눈에 훑어볼 수 있다.
 
-```
-lib/
-  app.dart                # 앱 진입 위젯, 테마·라우터 연결
-  main.dart                # Firebase 초기화 등 부트스트랩
-  models/                  # MovieReview, UserProfile 등 도메인 모델
-  screens/                 # 랭킹(메인)/상세/작성·수정/프로필/설정 화면
-  services/                # Firestore/Storage/Auth/TMDB 연동 서비스
-  state/providers.dart     # Riverpod 프로바이더 (인증 상태, 리뷰 목록/필터, 프로필 등)
-  widgets/                 # 리뷰 카드, 레이더 차트, 필터바 등 재사용 위젯
-  utils/                   # 상수, 테마, 웹 전용 conditional import 유틸
+**감상 연도 / 국내·해외 / 장르**로 목록을 필터링해서 볼 수 있다.
 
-functions/                 # Cloud Functions (카카오 인가코드 → Firebase 커스텀 토큰 교환)
-firestore.rules            # Firestore 보안 규칙 (본인 데이터만 접근)
-storage.rules              # Storage 보안 규칙 (본인 파일만 접근)
-firebase.json               # Hosting/Firestore/Storage/Functions 배포 설정
-```
+<!-- 스크린샷 추가 예정: 랭킹 카드 목록 -->
 
-## 로컬 개발 환경 설정
+## 영화 등록 — TMDB 자동완성
 
-### 1. 사전 준비물
+영화 제목을 검색하면 [TMDB](https://www.themoviedb.org)에서 포스터, 원제, 개봉년도, 러닝타임,
+장르, 제작 국가를 자동으로 채워준다. 직접 입력하는 건 관람 정보뿐이다:
 
-- Flutter SDK (`environment.sdk`는 `pubspec.yaml` 참고)
-- Firebase 프로젝트 (Blaze 요금제 — Storage/Cloud Functions 사용 때문에 필요)
-- [TMDB API 키](https://www.themoviedb.org/settings/api)
-- [카카오 개발자 앱](https://developers.kakao.com) (JS 키 / REST API 키 / 네이티브 앱 키, 필요 시 클라이언트 시크릿)
+- **영화관**: CGV·메가박스·롯데시네마·Netflix·Disney+ 등 프리셋 + 자유 입력
+- **특별관**: IMAX·4DX·ScreenX·돌비 시네마 등 다중 선택
+- **관람일**, **사진** 최대 2장
 
-### 2. Firebase 연결
+<!-- 스크린샷 추가 예정: 리뷰 작성 화면 -->
 
-이 저장소에는 API 키가 포함된 Firebase 생성 파일(`lib/firebase_options.dart`,
-`android/app/google-services.json`, `ios/Runner/GoogleService-Info.plist`)이 **제외**되어 있다.
-본인 Firebase 프로젝트로 아래 명령을 실행해 생성해야 한다.
+## 평가 — 5가지 기준 + 레이더 차트
 
-```bash
-dart pub global activate flutterfire_cli
-flutterfire configure
-```
+모든 영화는 **5개 지표**(순수재미 / 스토리 / 연기·연출 / 시청각 효과 / 작품성)로 평가하고,
+여기에 별도로 **난이도**와 **수위**를 매긴다. 상세 페이지에서는 이 영화의 점수와 내 전체 평균을
+겹쳐 그린 **레이더 차트**로 비교해볼 수 있다.
 
-`.firebaserc`의 `projects.default`도 본인 프로젝트 ID로 바꿔야 한다.
+<!-- 스크린샷 추가 예정: 상세 화면의 레이더 차트 -->
 
-### 3. 환경 변수
+### 나만의 평가 기준 커스터마이징
 
-`.env.example` → `.env` 로 복사 후 값 채우기 (앱에서 asset으로 번들됨):
+5개 지표의 이름과 설명은 프로필에서 자유롭게 바꿀 수 있다. 예를 들어 "작품성" 대신 "여운" 같은
+식으로 본인만의 언어로 바꿔서 평가할 수 있다.
 
-```bash
-cp .env.example .env
-```
+바꾼 기준은 **그 시점 이후에 등록·수정하는 리뷰에만** 적용된다. 리뷰를 저장할 때 그 순간의 기준을
+함께 스냅샷으로 저장해두기 때문에, 나중에 기준을 바꾸더라도 예전에 다른 기준으로 매겼던 리뷰의
+차트가 소급해서 바뀌지 않는다.
 
-Cloud Functions 쪽 서버 전용 값도 동일하게 준비:
+<!-- 스크린샷 추가 예정: 프로필의 평가 기준 편집 화면 -->
 
-```bash
-cp functions/.env.example functions/.env
-```
+## 상세 페이지
 
-### 4. 카카오 로그인 설정
+영화 제목을 누르면 TMDB의 해당 영화 페이지로 바로 이동해 줄거리·감독·배우 정보를 확인할 수 있다.
+관람일·러닝타임·난이도·수위, 레이더 차트, 후기, 첨부 사진까지 한 페이지에서 볼 수 있다.
 
-카카오 개발자 콘솔에서:
+<!-- 스크린샷 추가 예정: 상세 화면 전체 -->
 
-- **플랫폼 > Web** 도메인에 배포할 Firebase Hosting 도메인 등록 (예: `https://your-site.web.app`)
-- **카카오 로그인 > Redirect URI** 에도 동일 도메인 등록 (웹은 인가 코드 방식 OAuth 리다이렉트를 사용)
-- **카카오 로그인 > 보안 > 클라이언트 시크릿**을 활성화했다면 `functions/.env`의
-  `KAKAO_CLIENT_SECRET`도 반드시 채워야 토큰 교환이 성공한다.
+## 프로필 & 설정
 
-### 5. 실행
+- 닉네임, 프로필 사진 (업로드 또는 기본 아이콘)
+- **라이트 / 다크 / 시스템** 테마
+- 랭킹 목록에 사진 미리보기를 보여줄지, 리뷰 작성 시 현재 상영작 추천을 보여줄지 켜고 끄기
 
-```bash
-flutter pub get
-flutter run                       # 모바일/에뮬레이터
-flutter run -d chrome              # 웹
-```
+<!-- 스크린샷 추가 예정: 프로필 화면 / 설정 화면 -->
 
-### 6. 배포
+## 카카오 로그인 & 프라이버시
 
-```bash
-# Firestore/Storage 규칙 + Cloud Functions
-firebase deploy --only firestore:rules,storage:rules,functions
+로그인은 **카카오 계정 하나만** 지원한다. 모든 리뷰는 작성자 계정에 묶여 있고, Firestore·Storage
+보안 규칙으로 본인이 아니면 읽기·쓰기 모두 막혀 있다 — 로그아웃 상태나 다른 계정으로는 어떤 기록도
+보이지 않는다.
 
-# 웹 (아이콘 트리쉐이킹 끄지 않으면 Material 아이콘이 일부 누락됨)
-flutter build web --release --no-tree-shake-icons
-firebase deploy --only hosting
-```
+<!-- 스크린샷 추가 예정: 로그인 화면 -->
 
-## 보안/개인정보 참고
+---
 
-- 모든 리뷰 문서는 `ownerUid`로 소유자를 구분하며, Firestore/Storage 규칙에서
-  `request.auth.uid == ownerUid`가 아니면 읽기/쓰기를 모두 거부한다.
-- 카카오 로그인의 클라이언트 시크릿, TMDB 토큰 등은 `.env` / `functions/.env`에만 두고
-  저장소에는 커밋하지 않는다 (`.gitignore` 참고). 저장소를 포크/클론해 쓰려면 본인 값으로
-  새로 발급받아야 한다.
+Flutter · Firebase(Auth/Firestore/Storage/Functions/Hosting) · TMDB · Kakao Login
