@@ -1,15 +1,20 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../models/movie_review.dart';
+import '../state/providers.dart';
 import '../utils/constants.dart';
 import '../utils/theme.dart';
+import 'photo_viewer.dart';
 import 'score_slider.dart';
 
 /// 랭킹 목록의 리뷰 카드.
 /// 포스터를 좌측에 카드 높이만큼 꽉 채우고(잘림 없이), 순위+제목은 같은 줄,
 /// 점수는 항상 우측 상단. 카드 높이는 모든 카드가 동일하도록 고정.
-class ReviewCard extends StatelessWidget {
+/// 모바일 폭에서는 좌→우 스와이프로 수정, 우→좌 스와이프로 삭제할 수 있다.
+class ReviewCard extends ConsumerWidget {
   final MovieReview review;
   final int rank;
   final VoidCallback onTap;
@@ -23,8 +28,23 @@ class ReviewCard extends StatelessWidget {
     this.showPhotoPreview = false,
   });
 
+  Future<bool> _confirmDelete(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('삭제'),
+        content: const Text('정말 삭제하시겠습니까?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('삭제')),
+        ],
+      ),
+    );
+    return ok ?? false;
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final poster = posterUrl(review.posterPath, size: 'w200');
     final special = review.specialFormats.join(' · ');
     final isWide = MediaQuery.of(context).size.width >= kMobileBreakpoint;
@@ -35,7 +55,7 @@ class ReviewCard extends StatelessWidget {
         style: const TextStyle(
             fontSize: 26, fontWeight: FontWeight.bold, color: kPrimaryColor));
 
-    return Container(
+    final card = Container(
       decoration: BoxDecoration(
         color: context.cardBg,
         borderRadius: BorderRadius.circular(12),
@@ -151,6 +171,62 @@ class ReviewCard extends StatelessWidget {
         ),
       ),
     );
+
+    // 모바일 폭에서만 스와이프 액션 제공 (PC는 마우스 드래그라 어색함).
+    if (isWide || review.id == null) return card;
+
+    return Dismissible(
+      key: ValueKey(review.id),
+      direction: DismissDirection.horizontal,
+      // 좌→우로 쓸면(카드가 오른쪽으로 밀리며 왼쪽에 노출) 수정
+      background: _swipeAction(context,
+          icon: Icons.edit, label: '수정', color: kPrimaryColor, alignLeft: true),
+      // 우→좌로 쓸면(카드가 왼쪽으로 밀리며 오른쪽에 노출) 삭제
+      secondaryBackground: _swipeAction(context,
+          icon: Icons.delete, label: '삭제', color: kAverageColor, alignLeft: false),
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          context.push('/edit/${review.id}');
+          return false; // 목록에서 지우지 않고 그대로 둔다
+        }
+        return _confirmDelete(context);
+      },
+      onDismissed: (direction) async {
+        final storage = ref.read(storageServiceProvider);
+        final photos = List<String>.of(review.photos);
+        await ref.read(reviewServiceProvider).delete(review.id!);
+        for (final url in photos) {
+          storage.deleteByUrl(url);
+        }
+      },
+      child: card,
+    );
+  }
+
+  Widget _swipeAction(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required bool alignLeft,
+  }) {
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: Colors.white),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+      ],
+    );
+    return Container(
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      alignment: alignLeft ? Alignment.centerLeft : Alignment.centerRight,
+      padding: EdgeInsets.only(left: alignLeft ? 28 : 0, right: alignLeft ? 0 : 28),
+      child: content,
+    );
   }
 
   Widget _meta(BuildContext context, IconData icon, String text) {
@@ -253,11 +329,14 @@ class _Photo extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
-      child: CachedNetworkImage(
-        imageUrl: url,
-        fit: BoxFit.cover,
-        placeholder: (c, _) => Container(color: context.chipBg),
-        errorWidget: (c, _, _) => Container(color: context.chipBg),
+      child: GestureDetector(
+        onTap: () => openPhotoViewer(context, [url]),
+        child: CachedNetworkImage(
+          imageUrl: url,
+          fit: BoxFit.cover,
+          placeholder: (c, _) => Container(color: context.chipBg),
+          errorWidget: (c, _, _) => Container(color: context.chipBg),
+        ),
       ),
     );
   }

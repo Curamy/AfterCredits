@@ -55,8 +55,12 @@ class RankingScreen extends ConsumerWidget {
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.movie,
-                                      color: context.subtleText, size: 24),
+                                  Image.asset(
+                                    'assets/icons/lighticon_tp.png',
+                                    width: 28,
+                                    height: 28,
+                                    fit: BoxFit.contain,
+                                  ),
                                   const SizedBox(width: 8),
                                   const Text('애프터 크레딧',
                                       style: TextStyle(
@@ -141,7 +145,12 @@ class _LoggedOutView extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.movie_outlined, size: 56, color: kPrimaryColor),
+                Image.asset(
+                  'assets/icons/lighticon_tp.png',
+                  width: 86,
+                  height: 86,
+                  fit: BoxFit.contain,
+                ),
                 const SizedBox(height: 16),
                 const Text('애프터 크레딧',
                     style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),

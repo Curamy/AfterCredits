@@ -52,6 +52,8 @@ dependencies:
   cloud_functions: ^6.3.5
   web: ^1.1.1
   url_launcher: ^6.3.2
+  flutter_web_plugins:
+    sdk: flutter
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -76,6 +78,7 @@ flutter:
 
   assets:
     - .env
+    - assets/icons/lighticon_tp.png
 
   # 한글 폰트를 앱에 내장 (런타임 다운로드 시 첫 화면 두부(□) 방지, 오프라인 대응)
   fonts:

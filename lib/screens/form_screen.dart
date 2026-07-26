@@ -116,12 +116,65 @@ class _FormScreenState extends ConsumerState<FormScreen> {
     });
   }
 
+  // 웹 <input type=file>은 개수·파일형식을 브라우저/OS 단에서 강제할 수 없으므로
+  // (accept="image/*"를 줘도 일부 브라우저의 사진 선택기가 동영상 등을 허용하는
+  // 경우가 있음) 선택 이후 여기서 직접 개수·형식·용량을 검증한다.
+  static const _maxPhotoBytes = 10 * 1024 * 1024; // 10MB
+  static const _imageExtensions = {
+    'jpg', 'jpeg', 'png', 'heic', 'heif', 'webp', 'gif', 'bmp'
+  };
+
+  bool _isImageFile(XFile x) {
+    final mime = x.mimeType;
+    if (mime != null) return mime.startsWith('image/');
+    final ext = x.name.split('.').last.toLowerCase();
+    return _imageExtensions.contains(ext);
+  }
+
   Future<void> _pickPhoto() async {
-    if (_photos.length >= 2) return;
+    final remaining = 2 - _photos.length;
+    if (remaining <= 0) return;
     final picker = ImagePicker();
-    final x = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
-    if (x == null) return;
-    setState(() => _photos = [..._photos, _PhotoItem.file(x)]);
+    // 갤러리 선택 화면에서 여러 장을 한 번에 고르면서(카카오톡/인스타그램처럼
+    // 선택 순서 번호가 뜨는 것은 OS 제공 picker의 기본 동작) 순서까지 정할 수 있게
+    // pickMultiImage를 쓴다. 남은 자리가 1장뿐이면 단일 선택으로 충분하다.
+    final List<XFile> picked;
+    if (remaining == 1) {
+      final x = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+      picked = x == null ? const [] : [x];
+    } else {
+      picked = await picker.pickMultiImage(imageQuality: 85, limit: remaining);
+    }
+    if (picked.isEmpty) return;
+
+    final tooMany = picked.length > remaining;
+    final candidates = picked.take(remaining);
+
+    final accepted = <XFile>[];
+    var rejectedType = false;
+    var rejectedSize = false;
+    for (final x in candidates) {
+      if (!_isImageFile(x)) {
+        rejectedType = true;
+        continue;
+      }
+      if (await x.length() > _maxPhotoBytes) {
+        rejectedSize = true;
+        continue;
+      }
+      accepted.add(x);
+    }
+
+    if (accepted.isNotEmpty) {
+      setState(() => _photos = [..._photos, ...accepted.map(_PhotoItem.file)]);
+    }
+
+    final warnings = <String>[
+      if (tooMany) '사진은 최대 2장까지만 첨부할 수 있어요.',
+      if (rejectedType) '이미지 파일만 첨부할 수 있어요.',
+      if (rejectedSize) '사진 1장당 용량은 10MB를 넘을 수 없어요.',
+    ];
+    if (warnings.isNotEmpty) _snack(warnings.join(' '));
   }
 
   Future<void> _save() async {

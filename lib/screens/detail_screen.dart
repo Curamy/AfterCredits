@@ -324,7 +324,8 @@ class _ActionButtons extends ConsumerWidget {
         Expanded(
           child: FilledButton.icon(
             onPressed: () => context.push('/edit/${review.id}'),
-            style: FilledButton.styleFrom(backgroundColor: kPrimaryColor),
+            style: FilledButton.styleFrom(
+                backgroundColor: kPrimaryColor, foregroundColor: Colors.white),
             icon: const Icon(Icons.edit),
             label: const Text('수정'),
           ),
@@ -333,7 +334,8 @@ class _ActionButtons extends ConsumerWidget {
         Expanded(
           child: FilledButton.icon(
             onPressed: () => _confirmDelete(context, ref),
-            style: FilledButton.styleFrom(backgroundColor: kAverageColor),
+            style: FilledButton.styleFrom(
+                backgroundColor: kAverageColor, foregroundColor: Colors.white),
             icon: const Icon(Icons.delete),
             label: const Text('삭제'),
           ),

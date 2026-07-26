@@ -1,15 +1,20 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // 리뷰 사진 — 본인 폴더에 대해 본인만 읽기/쓰기
+    // 리뷰 사진 — 본인 폴더에 대해 본인만 읽기/쓰기. 클라이언트 검증을 우회해도
+    // 막히도록 서버 규칙에서도 이미지 파일·10MB 이하만 허용한다.
     match /photos/{uid}/{fileName} {
       allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid
+          && request.resource.size < 10 * 1024 * 1024
+          && request.resource.contentType.matches('image/.*');
     }
     // 프로필 사진 — 본인만
     match /avatars/{uid}/{fileName} {
       allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid
+          && request.resource.size < 10 * 1024 * 1024
+          && request.resource.contentType.matches('image/.*');
     }
   }
 }
