@@ -2,9 +2,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/inquiry.dart';
 import '../models/movie_review.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
+import '../services/inquiry_service.dart';
 import '../services/review_service.dart';
 import '../services/storage_service.dart';
 import '../services/tmdb_service.dart';
@@ -17,6 +19,15 @@ final reviewServiceProvider = Provider<ReviewService>((ref) => ReviewService());
 final storageServiceProvider = Provider<StorageService>((ref) => StorageService());
 final tmdbServiceProvider = Provider<TmdbService>((ref) => TmdbService());
 final userServiceProvider = Provider<UserService>((ref) => UserService());
+final inquiryServiceProvider =
+    Provider<InquiryService>((ref) => InquiryService());
+
+/// 내가 남긴 1:1 문의 목록 (답변 포함)
+final myInquiriesProvider = StreamProvider<List<Inquiry>>((ref) {
+  final user = ref.watch(authStateProvider).asData?.value;
+  if (user == null) return Stream.value(const []);
+  return ref.watch(inquiryServiceProvider).watchMine(user.uid);
+});
 
 // --- 사용자 프로필/설정 (users/{uid}) ---
 final userProfileProvider = StreamProvider<UserProfile?>((ref) {
@@ -44,6 +55,8 @@ final showRecommendationsProvider = Provider<bool>(
     (ref) => ref.watch(currentProfileProvider)?.showRecommendations ?? true);
 final showPhotoPreviewProvider = Provider<bool>(
     (ref) => ref.watch(currentProfileProvider)?.showPhotoPreview ?? true);
+final enableSwipeActionsProvider = Provider<bool>(
+    (ref) => ref.watch(currentProfileProvider)?.enableSwipeActions ?? true);
 
 /// 테마 모드 (프로필의 themeMode 반영)
 final themeModeProvider = Provider<ThemeMode>((ref) {

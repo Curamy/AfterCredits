@@ -89,6 +89,7 @@ class ReviewCard extends ConsumerWidget {
                         : CachedNetworkImage(
                             imageUrl: poster,
                             fit: BoxFit.cover,
+                            memCacheWidth: 300,
                             placeholder: (c, _) => Container(color: context.chipBg),
                             errorWidget: (c, _, _) => Container(
                                 color: context.chipBg,
@@ -160,7 +161,8 @@ class ReviewCard extends ConsumerWidget {
                   // 점수(우측 상단) + 사진 미리보기
                   _RightRegion(
                     score: score,
-                    photoUrl: hasPhoto ? review.photos.first : null,
+                    photoUrl: hasPhoto ? review.displayPhotos.first : null,
+                    fullPhotoUrl: hasPhoto ? review.photos.first : null,
                     isWide: isWide,
                     cardHeight: cardH,
                   ),
@@ -173,7 +175,11 @@ class ReviewCard extends ConsumerWidget {
     );
 
     // 모바일 폭에서만 스와이프 액션 제공 (PC는 마우스 드래그라 어색함).
-    if (isWide || review.id == null) return card;
+    if (isWide ||
+        review.id == null ||
+        !ref.watch(enableSwipeActionsProvider)) {
+      return card;
+    }
 
     return Dismissible(
       key: ValueKey(review.id),
@@ -273,11 +279,13 @@ class _RankBadge extends StatelessWidget {
 class _RightRegion extends StatelessWidget {
   final Widget score;
   final String? photoUrl;
+  final String? fullPhotoUrl;
   final bool isWide;
   final double cardHeight;
   const _RightRegion(
       {required this.score,
       required this.photoUrl,
+      required this.fullPhotoUrl,
       required this.isWide,
       required this.cardHeight});
 
@@ -295,7 +303,7 @@ class _RightRegion extends StatelessWidget {
               SizedBox(
                   width: photoSize,
                   height: photoSize,
-                  child: _Photo(url: photoUrl!)),
+                  child: _Photo(url: photoUrl!, fullUrl: fullPhotoUrl)),
               const SizedBox(width: 20),
             ],
             // 점수: 상단 정렬
@@ -314,26 +322,32 @@ class _RightRegion extends StatelessWidget {
             Expanded(
                 child: Center(
                     child: SizedBox(
-                        width: 48, height: 48, child: _Photo(url: photoUrl!)))),
+                        width: 48,
+                        height: 48,
+                        child: _Photo(url: photoUrl!, fullUrl: fullPhotoUrl)))),
         ],
       ),
     );
   }
 }
 
+/// 썸네일(url)을 작게 표시하고, 탭하면 원본 화질(fullUrl)로 확대해서 보여준다.
 class _Photo extends StatelessWidget {
   final String url;
-  const _Photo({required this.url});
+  final String? fullUrl;
+  const _Photo({required this.url, this.fullUrl});
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: GestureDetector(
-        onTap: () => openPhotoViewer(context, [url]),
+        onTap: () => openPhotoViewer(context, [fullUrl ?? url]),
         child: CachedNetworkImage(
           imageUrl: url,
           fit: BoxFit.cover,
+          // 카드 썸네일은 최대 ~150px로만 그려지므로 원본을 통째로 디코딩하지 않는다.
+          memCacheWidth: 400,
           placeholder: (c, _) => Container(color: context.chipBg),
           errorWidget: (c, _, _) => Container(color: context.chipBg),
         ),

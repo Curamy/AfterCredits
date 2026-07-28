@@ -97,11 +97,16 @@ class RankingScreen extends ConsumerWidget {
                               bottom: 88, right: kIsWeb ? 12 : 0),
                           itemCount: filtered.length,
                           separatorBuilder: (_, _) => const SizedBox(height: 12),
-                          itemBuilder: (context, i) => ReviewCard(
-                            review: filtered[i],
-                            rank: i + 1,
-                            showPhotoPreview: showPhoto,
-                            onTap: () => context.push('/review/${filtered[i].id}'),
+                          // RepaintBoundary: 스크롤 중 카드끼리 서로를 다시
+                          // 그리지 않도록 래스터 레이어를 분리해 버벅임을 줄인다.
+                          itemBuilder: (context, i) => RepaintBoundary(
+                            child: ReviewCard(
+                              review: filtered[i],
+                              rank: i + 1,
+                              showPhotoPreview: showPhoto,
+                              onTap: () =>
+                                  context.push('/review/${filtered[i].id}'),
+                            ),
                           ),
                         ),
                       ),
@@ -218,6 +223,8 @@ class AuthWidget extends ConsumerWidget {
                 context.push('/profile');
               case 'settings':
                 context.push('/settings');
+              case 'notices':
+                context.push('/notices');
               case 'logout':
                 await ref.read(authServiceProvider).signOut();
             }
@@ -231,6 +238,7 @@ class AuthWidget extends ConsumerWidget {
             const PopupMenuDivider(),
             const PopupMenuItem(value: 'profile', child: Text('프로필')),
             const PopupMenuItem(value: 'settings', child: Text('설정')),
+            const PopupMenuItem(value: 'notices', child: Text('공지사항')),
             const PopupMenuDivider(),
             const PopupMenuItem(value: 'logout', child: Text('로그아웃')),
           ],

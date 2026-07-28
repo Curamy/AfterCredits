@@ -108,6 +108,15 @@ class SettingsScreen extends ConsumerWidget {
                         onChanged: (v) =>
                             _save(ref, profile.copyWith(showRecommendations: v)),
                       ),
+                      Divider(height: 1, color: context.chipBg),
+                      SwitchListTile(
+                        title: const Text('밀어서 수정·삭제'),
+                        subtitle: Text('목록에서 카드를 좌우로 밀어 수정/삭제 (모바일 전용)',
+                            style: TextStyle(color: context.subtleText, fontSize: 12)),
+                        value: profile.enableSwipeActions,
+                        onChanged: (v) =>
+                            _save(ref, profile.copyWith(enableSwipeActions: v)),
+                      ),
                     ],
                   ),
                 ),

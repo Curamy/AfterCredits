@@ -19,11 +19,17 @@ import '../widgets/score_slider.dart';
 
 /// 사진 항목: 기존 URL 또는 새로 고른 파일
 class _PhotoItem {
-  final String? url; // 기존 사진
+  final String? url; // 기존 사진(원본)
+  final String? thumbUrl; // 기존 사진의 축소본
   final XFile? file; // 새로 선택
-  const _PhotoItem.url(this.url) : file = null;
-  const _PhotoItem.file(this.file) : url = null;
+  const _PhotoItem.url(this.url, {this.thumbUrl}) : file = null;
+  const _PhotoItem.file(this.file)
+      : url = null,
+        thumbUrl = null;
   bool get isNew => file != null;
+
+  /// 폼에서 미리보기로 띄울 URL (가능하면 가벼운 축소본)
+  String? get previewUrl => thumbUrl ?? url;
 }
 
 /// 리뷰 등록·수정 폼. btc_review ReviewForm 계승.
@@ -38,6 +44,8 @@ class FormScreen extends ConsumerStatefulWidget {
 class _FormScreenState extends ConsumerState<FormScreen> {
   final _theaterController = TextEditingController();
   final _reviewController = TextEditingController();
+  final _etcController = TextEditingController();
+  bool _etcSelected = false;
 
   int? _tmdbId;
   String _title = '';
@@ -55,6 +63,7 @@ class _FormScreenState extends ConsumerState<FormScreen> {
   Map<String, int> _scores = MovieReview.defaultScores();
   List<_PhotoItem> _photos = [];
   List<String> _originalPhotoUrls = [];
+  List<String> _originalThumbUrls = [];
 
   bool _initializing = false;
   bool _saving = false;
@@ -71,7 +80,17 @@ class _FormScreenState extends ConsumerState<FormScreen> {
   void dispose() {
     _theaterController.dispose();
     _reviewController.dispose();
+    _etcController.dispose();
     super.dispose();
+  }
+
+  /// 프리셋에 없는 값 = '기타'로 직접 입력한 특별관 이름
+  List<String> get _effectiveSpecialFormats {
+    final etc = _etcController.text.trim();
+    return [
+      ..._specialFormats,
+      if (_etcSelected && etc.isNotEmpty) etc,
+    ];
   }
 
   Future<void> _loadExisting() async {
@@ -91,14 +110,25 @@ class _FormScreenState extends ConsumerState<FormScreen> {
       _genres = List.of(r.genres);
       _country = r.country;
       _theaterController.text = r.theater;
-      _specialFormats = List.of(r.specialFormats);
+      // 프리셋에 있는 값은 칩으로, 나머지는 '기타' 직접 입력으로 복원
+      _specialFormats =
+          r.specialFormats.where(kSpecialFormats.contains).toList();
+      final custom =
+          r.specialFormats.where((f) => !kSpecialFormats.contains(f)).toList();
+      _etcSelected = custom.isNotEmpty;
+      _etcController.text = custom.join(', ');
       _watchDate = r.watchDate.isNotEmpty ? DateTime.tryParse(r.watchDate) : null;
       _difficulty = r.difficulty;
       _maturity = r.maturity;
       _scores = Map.of(r.scores);
       _reviewController.text = r.review;
       _originalPhotoUrls = List.of(r.photos);
-      _photos = r.photos.map((u) => _PhotoItem.url(u)).toList();
+      _originalThumbUrls = List.of(r.photoThumbs);
+      _photos = [
+        for (var i = 0; i < r.photos.length; i++)
+          _PhotoItem.url(r.photos[i],
+              thumbUrl: i < r.photoThumbs.length ? r.photoThumbs[i] : null),
+      ];
       _initializing = false;
     });
   }
@@ -138,12 +168,17 @@ class _FormScreenState extends ConsumerState<FormScreen> {
     // 갤러리 선택 화면에서 여러 장을 한 번에 고르면서(카카오톡/인스타그램처럼
     // 선택 순서 번호가 뜨는 것은 OS 제공 picker의 기본 동작) 순서까지 정할 수 있게
     // pickMultiImage를 쓴다. 남은 자리가 1장뿐이면 단일 선택으로 충분하다.
+    // maxWidth로 원본 해상도를 제한한다. 요즘 폰 사진은 4000px가 넘어서 그대로
+    // 올리면 화면에 띄울 때 디코딩 메모리가 수십 MB씩 잡히고, 특히 iOS 사파리는
+    // 탭당 메모리 상한이 낮아 페이지가 통째로 죽는다.
     final List<XFile> picked;
     if (remaining == 1) {
-      final x = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+      final x = await picker.pickImage(
+          source: ImageSource.gallery, imageQuality: 85, maxWidth: 1920);
       picked = x == null ? const [] : [x];
     } else {
-      picked = await picker.pickMultiImage(imageQuality: 85, limit: remaining);
+      picked = await picker.pickMultiImage(
+          imageQuality: 85, maxWidth: 1920, limit: remaining);
     }
     if (picked.isEmpty) return;
 
@@ -197,21 +232,30 @@ class _FormScreenState extends ConsumerState<FormScreen> {
     try {
       final storage = ref.read(storageServiceProvider);
 
-      // 1) 사진 업로드 (신규만)
+      // 1) 사진 업로드 (신규만). 목록/상세에서 쓸 축소본도 함께 만든다.
       final photoUrls = <String>[];
+      final thumbUrls = <String>[];
       for (var i = 0; i < _photos.length; i++) {
         final p = _photos[i];
         if (p.url != null) {
           photoUrls.add(p.url!);
+          thumbUrls.add(p.thumbUrl ?? p.url!);
         } else if (p.file != null) {
           final Uint8List bytes = await p.file!.readAsBytes();
-          final url = await storage.uploadPhoto(uid: uid, bytes: bytes, index: i);
-          photoUrls.add(url);
+          final uploaded =
+              await storage.uploadPhoto(uid: uid, bytes: bytes, index: i);
+          photoUrls.add(uploaded.url);
+          thumbUrls.add(uploaded.thumbUrl);
         }
       }
-      // 2) 제거된 기존 사진 삭제
+      // 2) 제거된 기존 사진 삭제 (썸네일도 함께)
       for (final old in _originalPhotoUrls) {
         if (!photoUrls.contains(old)) await storage.deleteByUrl(old);
+      }
+      for (final old in _originalThumbUrls) {
+        if (!thumbUrls.contains(old) && !photoUrls.contains(old)) {
+          await storage.deleteByUrl(old);
+        }
       }
 
       final dateStr = DateFormat('yyyy-MM-dd').format(_watchDate!);
@@ -231,7 +275,7 @@ class _FormScreenState extends ConsumerState<FormScreen> {
         genres: _genres,
         country: _country,
         theater: _theaterController.text.trim(),
-        specialFormats: _specialFormats,
+        specialFormats: _effectiveSpecialFormats,
         watchDate: dateStr,
         watchYear: _watchDate!.year,
         difficulty: _difficulty,
@@ -240,6 +284,7 @@ class _FormScreenState extends ConsumerState<FormScreen> {
         metricLabels: metricLabels,
         review: _reviewController.text.trim(),
         photos: photoUrls,
+        photoThumbs: thumbUrls,
       );
 
       final service = ref.read(reviewServiceProvider);
@@ -430,23 +475,51 @@ class _FormScreenState extends ConsumerState<FormScreen> {
   }
 
   Widget _specialFormatChips() {
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
+    // 프리셋에 없는 값이 저장돼 있으면 '기타'로 직접 입력한 것으로 본다.
+    final presets = kSpecialFormats.where((f) => f != kSpecialFormatEtc);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final f in kSpecialFormats)
-          FilterChip(
-            label: Text(f),
-            selected: _specialFormats.contains(f),
-            selectedColor: kPrimaryColor.withValues(alpha: 0.2),
-            onSelected: (sel) => setState(() {
-              if (sel) {
-                _specialFormats = [..._specialFormats, f];
-              } else {
-                _specialFormats = _specialFormats.where((e) => e != f).toList();
-              }
-            }),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final f in presets)
+              FilterChip(
+                label: Text(f),
+                selected: _specialFormats.contains(f),
+                selectedColor: kPrimaryColor.withValues(alpha: 0.2),
+                onSelected: (sel) => setState(() {
+                  if (sel) {
+                    _specialFormats = [..._specialFormats, f];
+                  } else {
+                    _specialFormats =
+                        _specialFormats.where((e) => e != f).toList();
+                  }
+                }),
+              ),
+            FilterChip(
+              label: const Text(kSpecialFormatEtc),
+              selected: _etcSelected,
+              selectedColor: kPrimaryColor.withValues(alpha: 0.2),
+              onSelected: (sel) => setState(() {
+                _etcSelected = sel;
+                if (!sel) _etcController.clear();
+              }),
+            ),
+          ],
+        ),
+        if (_etcSelected) ...[
+          const SizedBox(height: 10),
+          TextField(
+            controller: _etcController,
+            decoration: InputDecoration(
+              hintText: '특별관 이름 직접 입력',
+              isDense: true,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            ),
           ),
+        ],
       ],
     );
   }

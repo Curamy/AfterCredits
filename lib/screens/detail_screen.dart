@@ -125,7 +125,9 @@ class DetailScreen extends ConsumerWidget {
                   ],
                   if (review.photos.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    PhotoSection(photos: review.photos),
+                    PhotoSection(
+                        photos: review.displayPhotos,
+                        fullPhotos: review.photos),
                   ],
                   if (loggedIn) ...[
                     const SizedBox(height: 20),
@@ -184,7 +186,8 @@ class _Header extends StatelessWidget {
             height: 150,
             child: poster == null
                 ? Container(color: Colors.grey.shade200, child: const Icon(Icons.movie))
-                : CachedNetworkImage(imageUrl: poster, fit: BoxFit.cover),
+                : CachedNetworkImage(
+                    imageUrl: poster, fit: BoxFit.cover, memCacheWidth: 300),
           ),
         ),
         const SizedBox(width: 16),

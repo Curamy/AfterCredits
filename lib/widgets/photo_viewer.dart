@@ -64,6 +64,9 @@ class _PhotoViewerPageState extends State<_PhotoViewerPage> {
                   child: CachedNetworkImage(
                     imageUrl: widget.photos[i],
                     fit: BoxFit.contain,
+                    // 전체화면이라도 화면 폭의 2배면 충분하다. 원본을 그대로
+                    // 디코딩하면 메모리 상한이 낮은 모바일 브라우저가 죽는다.
+                    memCacheWidth: 1600,
                   ),
                 ),
               ),

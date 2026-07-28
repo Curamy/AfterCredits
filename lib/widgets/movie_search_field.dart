@@ -181,7 +181,10 @@ class _MovieSearchFieldState extends ConsumerState<MovieSearchField> {
                                   child: const Icon(Icons.movie, size: 18))
                               : ClipRRect(
                                   borderRadius: BorderRadius.circular(4),
-                                  child: CachedNetworkImage(imageUrl: poster, fit: BoxFit.cover),
+                                  child: CachedNetworkImage(
+                                      imageUrl: poster,
+                                      fit: BoxFit.cover,
+                                      memCacheWidth: 150),
                                 ),
                         ),
                         title: Text(r.title, maxLines: 1, overflow: TextOverflow.ellipsis),

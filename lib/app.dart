@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import 'screens/detail_screen.dart';
 import 'screens/form_screen.dart';
+import 'screens/inquiries_screen.dart';
+import 'screens/notices_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/ranking_screen.dart';
 import 'screens/settings_screen.dart';
@@ -26,6 +28,8 @@ final _router = GoRouter(
     ),
     GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
     GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
+    GoRoute(path: '/notices', builder: (context, state) => const NoticesScreen()),
+    GoRoute(path: '/inquiries', builder: (context, state) => const InquiriesScreen()),
   ],
 );
 

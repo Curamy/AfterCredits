@@ -33,6 +33,8 @@ class MovieReview {
   final Map<String, String> metricLabels;
   final String review;
   final List<String> photos; // Storage URL (최대 2)
+  /// 목록/상세에서 쓰는 축소본 URL. 비어 있으면 photos를 그대로 사용한다.
+  final List<String> photoThumbs;
 
   // --- 파생/메타 ---
   final double totalScore;
@@ -60,10 +62,17 @@ class MovieReview {
     this.metricLabels = const {},
     this.review = '',
     this.photos = const [],
+    this.photoThumbs = const [],
     this.totalScore = 0,
     this.createdAt = '',
     this.updatedAt = '',
   });
+
+  /// 목록·상세에서 쓸 표시용 사진 URL (썸네일이 있으면 썸네일, 없으면 원본)
+  List<String> get displayPhotos =>
+      photoThumbs.length == photos.length && photoThumbs.isNotEmpty
+          ? photoThumbs
+          : photos;
 
   /// 점수 맵의 평균 (5지표 평균 = totalScore)
   static double averageOf(Map<String, int> scores) {
@@ -111,6 +120,9 @@ class MovieReview {
           const {},
       review: data['review'] as String? ?? '',
       photos: (data['photos'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      photoThumbs:
+          (data['photoThumbs'] as List?)?.map((e) => e.toString()).toList() ??
+              [],
       totalScore: (data['totalScore'] as num?)?.toDouble() ?? averageOf(scores),
       createdAt: data['createdAt'] as String? ?? '',
       updatedAt: data['updatedAt'] as String? ?? '',
@@ -139,6 +151,7 @@ class MovieReview {
       'metricLabels': metricLabels,
       'review': review,
       'photos': photos,
+      'photoThumbs': photoThumbs,
       'totalScore': averageOf(scores),
       'createdAt': createdAt,
       'updatedAt': updatedAt,
@@ -166,6 +179,7 @@ class MovieReview {
     Map<String, String>? metricLabels,
     String? review,
     List<String>? photos,
+    List<String>? photoThumbs,
     double? totalScore,
     String? createdAt,
     String? updatedAt,
@@ -191,6 +205,7 @@ class MovieReview {
       metricLabels: metricLabels ?? this.metricLabels,
       review: review ?? this.review,
       photos: photos ?? this.photos,
+      photoThumbs: photoThumbs ?? this.photoThumbs,
       totalScore: totalScore ?? this.totalScore,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

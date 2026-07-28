@@ -6,8 +6,11 @@ import 'photo_viewer.dart';
 /// 상세 화면의 사진 표시 (1장 = 전체폭, 2장 = 반반). btc_review 요구사항.
 /// 탭하면 전체화면으로 확대해서 볼 수 있다.
 class PhotoSection extends StatelessWidget {
+  /// 화면에 인라인으로 띄울 URL (가벼운 축소본)
   final List<String> photos;
-  const PhotoSection({super.key, required this.photos});
+  /// 탭해서 확대할 때 쓸 원본 URL (없으면 photos 사용)
+  final List<String>? fullPhotos;
+  const PhotoSection({super.key, required this.photos, this.fullPhotos});
 
   @override
   Widget build(BuildContext context) {
@@ -33,10 +36,12 @@ class PhotoSection extends StatelessWidget {
       child: AspectRatio(
         aspectRatio: aspectRatio,
         child: GestureDetector(
-          onTap: () => openPhotoViewer(context, photos, initialIndex: index),
+          onTap: () => openPhotoViewer(context, fullPhotos ?? photos,
+              initialIndex: index),
           child: CachedNetworkImage(
             imageUrl: url,
             fit: BoxFit.cover,
+            memCacheWidth: 1000,
             placeholder: (c, _) => Container(color: Colors.grey.shade200),
             errorWidget: (c, _, _) => Container(
               color: Colors.grey.shade200,

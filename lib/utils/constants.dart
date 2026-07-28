@@ -47,17 +47,24 @@ const List<String> kTheaterPresets = [
   '기타',
 ];
 
-/// 특별관(상영 포맷) 옵션 — 다중 선택
+/// 특별관(상영 포맷) 옵션 — 다중 선택.
+/// '기타'를 고르면 직접 입력한 이름이 대신 저장된다.
 const List<String> kSpecialFormats = [
   '일반',
   'IMAX',
   '4DX',
-  'ScreenX',
-  '돌비 시네마',
-  'Dolby Atmos',
-  'SUPER PLEX',
-  'Cine&Foret',
+  'SCREENX',
+  'MX4D',
+  'Dolby Cinema',
+  '리클라이너',
+  kSpecialFormatEtc,
 ];
+
+/// 특별관 '기타' 항목 (선택 시 자유 입력)
+const String kSpecialFormatEtc = '기타';
+
+/// 공지사항 하단에 표시하는 운영자 연락처
+const String kContactEmail = 'damaon2009@gmail.com';
 
 /// 국내/해외 구분
 const String kDomestic = '국내';

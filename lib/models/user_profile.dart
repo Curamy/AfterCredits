@@ -28,6 +28,7 @@ class UserProfile {
   final String themeMode; // 'light' | 'dark' | 'system'
   final bool showPhotoPreview;
   final bool showRecommendations;
+  final bool enableSwipeActions;
 
   const UserProfile({
     required this.uid,
@@ -38,6 +39,7 @@ class UserProfile {
     this.themeMode = 'system',
     this.showPhotoPreview = true,
     this.showRecommendations = true,
+    this.enableSwipeActions = true,
   });
 
   /// 기본값 (문서가 없을 때)
@@ -64,6 +66,7 @@ class UserProfile {
       themeMode: data['themeMode'] as String? ?? 'system',
       showPhotoPreview: data['showPhotoPreview'] as bool? ?? true,
       showRecommendations: data['showRecommendations'] as bool? ?? true,
+      enableSwipeActions: data['enableSwipeActions'] as bool? ?? true,
     );
   }
 
@@ -75,6 +78,7 @@ class UserProfile {
         'themeMode': themeMode,
         'showPhotoPreview': showPhotoPreview,
         'showRecommendations': showRecommendations,
+        'enableSwipeActions': enableSwipeActions,
       };
 
   /// 기본 기준에 사용자 오버라이드를 병합한 실제 표시용 지표
@@ -100,6 +104,7 @@ class UserProfile {
     String? themeMode,
     bool? showPhotoPreview,
     bool? showRecommendations,
+    bool? enableSwipeActions,
   }) {
     return UserProfile(
       uid: uid,
@@ -110,6 +115,7 @@ class UserProfile {
       themeMode: themeMode ?? this.themeMode,
       showPhotoPreview: showPhotoPreview ?? this.showPhotoPreview,
       showRecommendations: showRecommendations ?? this.showRecommendations,
+      enableSwipeActions: enableSwipeActions ?? this.enableSwipeActions,
     );
   }
 }
