@@ -101,4 +101,18 @@ class AuthService {
     } catch (_) {}
     await _auth.signOut();
   }
+
+  /// 회원탈퇴: 서버에서 리뷰·사진·프로필·문의·계정 자체를 모두 삭제한 뒤
+  /// 카카오 연결도 끊고 로그아웃한다. 되돌릴 수 없다.
+  Future<void> deleteAccount() async {
+    final callable = _functions.httpsCallable('deleteAccount');
+    await callable.call<void>();
+
+    try {
+      await UserApi.instance.unlink();
+    } catch (_) {
+      // 카카오 연결 해제 실패는 무시 (계정 데이터는 이미 삭제됨)
+    }
+    await _auth.signOut();
+  }
 }

@@ -12,10 +12,13 @@ class AppRelease {
 }
 
 /// 현재 배포 버전 (목록의 첫 항목과 항상 일치시킬 것)
-const String kAppVersion = '0.2.0';
+const String kAppVersion = '0.2.1';
 
 /// 최신 버전이 위로 오도록 정렬
 const List<AppRelease> kChangelog = [
+  AppRelease('0.2.1', '2026-07-28', [
+    '프로필에서 회원탈퇴를 할 수 있습니다.',
+  ]),
   AppRelease('0.2.0', '2026-07-26', [
     '공지사항 화면을 추가했습니다. 앞으로 업데이트 내역을 여기에서 확인할 수 있습니다.',
     '1:1 문의하기를 추가했습니다. 남긴 문의와 답변을 공지사항에서 확인할 수 있습니다.',

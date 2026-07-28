@@ -71,6 +71,39 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     });
   }
 
+  Future<void> _confirmDeleteAccount() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('회원탈퇴'),
+        content: const Text(
+            '회원탈퇴 시 작성한 모든 리뷰·사진·프로필이 영구적으로 삭제되며 되돌릴 수 없습니다.\n정말 탈퇴하시겠습니까?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('탈퇴', style: TextStyle(color: kAverageColor)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    setState(() => _saving = true);
+    try {
+      await ref.read(authServiceProvider).deleteAccount();
+      if (mounted) context.go('/');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('탈퇴 실패: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   void _resetCriteria() {
     setState(() {
       for (final d in kDefaultScoreMetrics) {
@@ -246,7 +279,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: InkWell(
+                    onTap: _saving ? null : _confirmDeleteAccount,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 4),
+                      child: Text('회원탈퇴',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: context.hintText,
+                              decoration: TextDecoration.underline)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
 
                 // 평가 기준 커스터마이징
                 SectionCard(

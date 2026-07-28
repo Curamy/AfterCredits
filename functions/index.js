@@ -114,3 +114,45 @@ exports.kakaoCustomToken = onCall(async (request) => {
   const token = await admin.auth().createCustomToken(uid, {provider: "kakao"});
   return {token};
 });
+
+/**
+ * 회원탈퇴: 본인 계정과 관련된 모든 데이터를 삭제한다.
+ * - movies(본인 리뷰) 문서 전체
+ * - Storage의 photos/{uid}, avatars/{uid} 폴더 전체
+ * - users/{uid} 프로필 문서
+ * - inquiries(본인 문의) 문서 전체
+ * - Firebase Auth 계정 자체
+ *
+ * 클라이언트에서 넘겨준 uid는 신뢰하지 않고 항상 request.auth.uid만 사용한다
+ * (본인 계정만 지울 수 있도록).
+ */
+exports.deleteAccount = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "로그인이 필요합니다.");
+  }
+  const uid = request.auth.uid;
+  const db = admin.firestore();
+  const bucket = admin.storage().bucket();
+
+  // 1) 리뷰 문서 삭제
+  const movies = await db.collection("movies").where("ownerUid", "==", uid).get();
+  await Promise.all(movies.docs.map((d) => d.ref.delete()));
+
+  // 2) 문의 문서 삭제
+  const inquiries = await db.collection("inquiries").where("uid", "==", uid).get();
+  await Promise.all(inquiries.docs.map((d) => d.ref.delete()));
+
+  // 3) Storage 사진 삭제 (원본/썸네일/프로필사진)
+  await Promise.all([
+    bucket.deleteFiles({prefix: `photos/${uid}/`}).catch(() => {}),
+    bucket.deleteFiles({prefix: `avatars/${uid}/`}).catch(() => {}),
+  ]);
+
+  // 4) 프로필 문서 삭제
+  await db.collection("users").doc(uid).delete().catch(() => {});
+
+  // 5) Firebase Auth 계정 삭제 (마지막에 — 위 단계에서 인증이 계속 필요하므로)
+  await admin.auth().deleteUser(uid);
+
+  return {ok: true};
+});
