@@ -77,7 +77,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('회원탈퇴'),
         content: const Text(
-            '회원탈퇴 시 작성한 모든 리뷰·사진·프로필이 영구적으로 삭제되며 되돌릴 수 없습니다.\n정말 탈퇴하시겠습니까?'),
+            '회원탈퇴 시 모든 데이터가 영구적으로 삭제되며 되돌릴 수 없습니다.\n정말 탈퇴하시겠습니까?'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),

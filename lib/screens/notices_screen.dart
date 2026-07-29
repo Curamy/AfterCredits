@@ -18,82 +18,88 @@ class NoticesScreen extends ConsumerWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: MaxWidthBody(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () =>
-                          context.canPop() ? context.pop() : context.go('/'),
-                      icon: const Icon(Icons.arrow_back),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      color: context.subtleText,
-                    ),
-                    const SizedBox(width: 12),
-                    const Text('공지사항',
-                        style:
-                            TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                    const Spacer(),
-                    Text('v$kAppVersion',
-                        style:
-                            TextStyle(color: context.subtleText, fontSize: 13)),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                for (final release in kChangelog) ...[
-                  _ReleaseCard(release: release),
-                  const SizedBox(height: 12),
+        child: MaxWidthBody(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () =>
+                        context.canPop() ? context.pop() : context.go('/'),
+                    icon: const Icon(Icons.arrow_back),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    color: context.subtleText,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text('공지사항',
+                      style:
+                          TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  Text('v$kAppVersion',
+                      style:
+                          TextStyle(color: context.subtleText, fontSize: 13)),
                 ],
-                const SizedBox(height: 12),
-                Divider(color: context.scheme.outlineVariant),
-                const SizedBox(height: 20),
-
-                Center(
+              ),
+              const SizedBox(height: 20),
+              // 업데이트 내역만 스크롤되고, 아래 1:1 문의 영역은 화면 하단에 고정.
+              Expanded(
+                child: SingleChildScrollView(
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          OutlinedButton.icon(
-                            onPressed: () => context.push('/inquiries'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 18, vertical: 14),
-                            ),
-                            icon: const Icon(Icons.history, size: 18),
-                            label: Text(myInquiries.isEmpty
-                                ? '1:1 문의내역'
-                                : '1:1 문의내역 (${myInquiries.length})'),
-                          ),
-                          const SizedBox(width: 10),
-                          FilledButton.icon(
-                            onPressed: () => _openInquiry(context),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: kPrimaryColor,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 18, vertical: 14),
-                            ),
-                            icon: const Icon(Icons.mail_outline, size: 18),
-                            label: const Text('1:1 문의하기'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text('Email) $kContactEmail',
-                          style: TextStyle(
-                              color: context.hintText, fontSize: 11)),
+                      for (final release in kChangelog) ...[
+                        _ReleaseCard(release: release),
+                        const SizedBox(height: 12),
+                      ],
                     ],
                   ),
                 ),
-                const SizedBox(height: 40),
-              ],
-            ),
+              ),
+              Divider(color: context.scheme.outlineVariant),
+              const SizedBox(height: 16),
+              Center(
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: () => context.push('/inquiries'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 18, vertical: 14),
+                          ),
+                          icon: const Icon(Icons.history, size: 18),
+                          label: Text(myInquiries.isEmpty
+                              ? '1:1 문의내역'
+                              : '1:1 문의내역 (${myInquiries.length})'),
+                        ),
+                        const SizedBox(width: 10),
+                        FilledButton.icon(
+                          onPressed: () => _openInquiry(context),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: kPrimaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 18, vertical: 14),
+                          ),
+                          icon: const Icon(Icons.mail_outline, size: 18),
+                          label: const Text('1:1 문의하기'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text('Email) $kContactEmail',
+                        style:
+                            TextStyle(color: context.hintText, fontSize: 11)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
           ),
         ),
       ),

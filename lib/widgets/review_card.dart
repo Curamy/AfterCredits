@@ -364,10 +364,11 @@ class _GenreLine extends StatelessWidget {
   static const _style = TextStyle(fontSize: 11);
   static const _chipHPad = 8.0;
 
-  double _chipWidth(String text) {
+  double _chipWidth(String text, TextScaler textScaler) {
     final tp = TextPainter(
       text: TextSpan(text: text, style: _style),
       textDirection: TextDirection.ltr,
+      textScaler: textScaler,
     )..layout();
     return tp.width + _chipHPad * 2;
   }
@@ -375,13 +376,19 @@ class _GenreLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (genres.isEmpty) return const SizedBox(height: 20);
+    // 아이폰 등에서 시스템 글자 크기를 키워둔 경우, 실제로 그려지는 Text 칩은
+    // 그 배율만큼 커지는데 폭 계산에는 반영이 안 되면 "+N"으로 접혀야 할 태그가
+    // 넘쳐서 사진 영역까지 침범하는 버그가 생긴다. 같은 배율로 측정해야 한다.
+    final textScaler = MediaQuery.textScalerOf(context);
     return LayoutBuilder(builder: (context, c) {
       const spacing = 4.0;
-      const overflowW = 42.0; // "+N" 칩 예약 폭
+      // "+N" 칩도 글자 크기 배율만큼 넓어지므로 예약 폭도 같이 늘린다.
+      final overflowW = 42.0 * textScaler.scale(1);
       double used = 0;
       final visible = <String>[];
       for (var i = 0; i < genres.length; i++) {
-        final w = _chipWidth(genres[i]) + (visible.isEmpty ? 0 : spacing);
+        final w = _chipWidth(genres[i], textScaler) +
+            (visible.isEmpty ? 0 : spacing);
         final needReserve = i < genres.length - 1;
         if (used + w + (needReserve ? spacing + overflowW : 0) <= c.maxWidth) {
           used += w;
