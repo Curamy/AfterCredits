@@ -16,7 +16,7 @@ const String kAppVersion = '0.2.3';
 
 /// 최신 버전이 위로 오도록 정렬
 const List<AppRelease> kChangelog = [
-  AppRelease('0.2.3', '2026-08-27', [
+  AppRelease('0.2.3', '2026-09-10', [
     '새로 가입한 사용자가 관리 데이터에 등록되지 않던 문제를 수정했습니다.',
   ]),
   AppRelease('0.2.2', '2026-07-30', [
