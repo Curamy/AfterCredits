@@ -110,7 +110,29 @@ exports.kakaoCustomToken = onCall(async (request) => {
     }
   }
 
-  // 3) 커스텀 토큰 발급 → 클라이언트가 signInWithCustomToken으로 로그인
+  // 3) users/{uid} 프로필 문서 보장.
+  //    앱은 이 문서가 없어도 기본값으로 동작하기 때문에, 프로필/설정을 한 번도
+  //    건드리지 않은 사용자는 문서가 만들어지지 않아 운영자 화면에서 아예
+  //    보이지 않는 문제가 있었다. 로그인 시점에 없으면 만들어 둔다.
+  //    nickname은 사용자가 직접 정하는 값이므로 여기서 건드리지 않고,
+  //    authName(카카오 표시 이름)만 참고용으로 최신 상태를 유지한다.
+  try {
+    const userRef = admin.firestore().collection("users").doc(uid);
+    const snap = await userRef.get();
+    if (!snap.exists) {
+      await userRef.set({
+        createdAt: new Date().toISOString(),
+        authName: displayName,
+      });
+    } else if (snap.data().authName !== displayName) {
+      await userRef.set({authName: displayName}, {merge: true});
+    }
+  } catch (e) {
+    // 프로필 문서 생성 실패가 로그인 자체를 막지 않도록 한다.
+    console.error("users 문서 생성 실패:", e);
+  }
+
+  // 4) 커스텀 토큰 발급 → 클라이언트가 signInWithCustomToken으로 로그인
   const token = await admin.auth().createCustomToken(uid, {provider: "kakao"});
   return {token};
 });

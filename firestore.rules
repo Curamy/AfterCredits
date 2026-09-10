@@ -1,10 +1,19 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 리뷰는 개인 기록 — 로그인한 본인만 읽기/쓰기 가능
+    // 관리자 대시보드(after_credits_admin) 전용 구글 로그인 계정.
+    // 카카오로 로그인하는 일반 유저의 커스텀 토큰에는 email 클레임이 아예 없으므로
+    // 일반 유저가 이 조건에 걸릴 일은 없다.
+    function isAdmin() {
+      return request.auth != null
+             && request.auth.token.email == 'damaon2009@gmail.com';
+    }
+
+    // 리뷰는 개인 기록 — 로그인한 본인 또는 관리자만 읽기 가능, 쓰기는 본인만
     match /movies/{doc} {
-      allow read: if request.auth != null
-                  && resource.data.ownerUid == request.auth.uid;
+      allow read: if isAdmin()
+                  || (request.auth != null
+                      && resource.data.ownerUid == request.auth.uid);
 
       // 생성 시 본인 UID로만 소유자 지정 가능 (남의 이름으로 못 만들게)
       allow create: if request.auth != null
@@ -18,21 +27,23 @@ service cloud.firestore {
                     && resource.data.ownerUid == request.auth.uid;
     }
 
-    // 프로필/설정 — 본인 문서만 읽기/쓰기
+    // 프로필/설정 — 본인 또는 관리자만 읽기, 쓰기는 본인만
     match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+      allow write: if request.auth != null && request.auth.uid == uid;
     }
 
-    // 1:1 문의 — 본인이 남긴 문의와 그 답변만 읽을 수 있다.
-    // 답변(reply)은 운영자 도구(Admin SDK)에서만 작성하므로 앱에서는 수정 불가.
+    // 1:1 문의 — 본인이 남긴 문의와 그 답변, 또는 관리자만 읽을 수 있다.
+    // 답변(reply)은 관리자 대시보드에서만 작성 가능 (일반 유저는 앱에서 수정 불가).
     match /inquiries/{doc} {
-      allow read: if request.auth != null
-                  && resource.data.uid == request.auth.uid;
+      allow read: if isAdmin()
+                  || (request.auth != null && resource.data.uid == request.auth.uid);
       allow create: if request.auth != null
                     && request.resource.data.uid == request.auth.uid
                     && request.resource.data.message is string
                     && request.resource.data.message.size() <= 5000;
-      allow update, delete: if false;
+      allow update: if isAdmin();
+      allow delete: if false;
     }
   }
 }
